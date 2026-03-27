@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  # ── LangServe API (backend) ──────────────────────────────────────────────────
+  agent-api:
+    build: .
+    command: python server.py
+    ports:
+      - "8000:8000"
+    environment:
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - NVIDIA_MODEL=${NVIDIA_MODEL:-meta/llama-3.1-70b-instruct}
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/agent/playground"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ── Gradio frontend ──────────────────────────────────────────────────────────
+  agent-ui:
+    build: .
+    command: python app.py
+    ports:
+      - "7860:7860"
+    environment:
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - NVIDIA_MODEL=${NVIDIA_MODEL:-meta/llama-3.1-70b-instruct}
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
+    depends_on:
+      agent-api:
+        condition: service_healthy
